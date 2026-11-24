@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_HOME: /home/runner/android-sdk
+      ANDROID_SDK_ROOT: /home/runner/android-sdk
 
     steps:
       - name: Checkout code
@@ -23,19 +23,13 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Ensure Android SDK packages
+      - name: Prepare Android SDK directory and licenses
         run: |
-          SDK_DIR="/usr/local/lib/android/sdk"
-          mkdir -p "$SDK_DIR/licenses"
-          printf "8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$SDK_DIR/licenses/android-sdk-license"
-
-          SDKMANAGER=$(find "$SDK_DIR" -name "sdkmanager" -type f 2>/dev/null | head -n 1)
-          if [ -n "$SDKMANAGER" ]; then
-            chmod +x "$SDKMANAGER"
-            yes | "$SDKMANAGER" --sdk_root="$SDK_DIR" "platform-tools" "platforms;android-34" "build-tools;34.0.0" || true
-          else
-            echo "Using preinstalled SDK in $SDK_DIR"
-          fi
+          mkdir -p "$ANDROID_HOME/licenses"
+          printf "8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
+          cp -r /usr/local/lib/android/sdk/platforms "$ANDROID_HOME/" 2>/dev/null || true
+          cp -r /usr/local/lib/android/sdk/build-tools "$ANDROID_HOME/" 2>/dev/null || true
+          cp -r /usr/local/lib/android/sdk/platform-tools "$ANDROID_HOME/" 2>/dev/null || true
 
       - name: Create minimal Android project if missing
         run: |
