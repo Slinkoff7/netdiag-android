@@ -35,7 +35,7 @@ jobs:
           if [ ! -f "gradlew" ]; then
             mkdir -p app/src/main/java/com/example/netdiag app/src/main/res/layout app/src/main/res/values
 
-            printf 'rootProject.name = "NetDiag"\ninclude ":app"\n' > settings.gradle
+            printf 'pluginManagement {\n    repositories {\n        google()\n        mavenCentral()\n        gradlePluginPortal()\n    }\n}\ndependencyResolutionManagement {\n    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\nrootProject.name = "NetDiag"\ninclude ":app"\n' > settings.gradle
 
             printf 'plugins {\n    id "com.android.application" version "8.2.2" apply false\n    id "org.jetbrains.kotlin.android" version "1.9.22" apply false\n}\n' > build.gradle
 
