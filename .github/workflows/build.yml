@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ANDROID_HOME: /home/runner/android-sdk
-      ANDROID_SDK_ROOT: /home/runner/android-sdk
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
     steps:
       - name: Checkout code
@@ -23,84 +23,35 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Prepare Android SDK directory and licenses
+      - name: Accept SDK licenses locally
         run: |
-          mkdir -p "$ANDROID_HOME/licenses"
-          printf "8933bad161af4178b1185d1a37fbf41ea5269c55\nd56f5187479451eabf01fb78af6dfcb131a6481e\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
-          cp -r /usr/local/lib/android/sdk/platforms "$ANDROID_HOME/" 2>/dev/null || true
-          cp -r /usr/local/lib/android/sdk/build-tools "$ANDROID_HOME/" 2>/dev/null || true
-          cp -r /usr/local/lib/android/sdk/platform-tools "$ANDROID_HOME/" 2>/dev/null || true
+          mkdir -p "$HOME/.android"
+          touch "$HOME/.android/repositories.cfg"
+          mkdir -p "/usr/local/lib/android/sdk/licenses" || true
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$HOME/android-sdk-license" || true
 
-      - name: Create minimal Android project if missing
+      - name: Create project files if missing
         run: |
           if [ ! -f "gradlew" ]; then
             mkdir -p app/src/main/java/com/example/netdiag app/src/main/res/layout app/src/main/res/values
-            cat << 'EOF' > settings.gradle
-            rootProject.name = "NetDiag"
-            include ':app'
-            EOF
 
-            cat << 'EOF' > build.gradle
-            plugins {
-                id 'com.android.application' version '8.2.2' apply false
-                id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
-            }
-            EOF
+            printf 'rootProject.name = "NetDiag"\ninclude ":app"\n' > settings.gradle
 
-            cat << 'EOF' > gradle.properties
-            org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-            android.useAndroidX=true
-            EOF
+            printf 'plugins {\n    id "com.android.application" version "8.2.2" apply false\n    id "org.jetbrains.kotlin.android" version "1.9.22" apply false\n}\n' > build.gradle
 
-            cat << 'EOF' > app/build.gradle
-            plugins {
-                id 'com.android.application'
-                id 'org.jetbrains.kotlin.android'
-            }
+            printf 'org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\n' > gradle.properties
 
-            android {
-                namespace 'com.example.netdiag'
-                compileSdk 34
+            printf 'plugins {\n    id "com.android.application"\n    id "org.jetbrains.kotlin.android"\n}\n\nandroid {\n    namespace "com.example.netdiag"\n    compileSdk 34\n\n    defaultConfig {\n        applicationId "com.example.netdiag"\n        minSdk 24\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n\n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }\n    kotlinOptions {\n        jvmTarget = "17"\n    }\n}\n\ndependencies {\n    implementation "androidx.core:core-ktx:1.12.0"\n    implementation "androidx.appcompat:appcompat:1.6.1"\n    implementation "com.google.android.material:material:1.11.0"\n    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"\n}\n' > app/build.gradle
 
-                defaultConfig {
-                    applicationId "com.example.netdiag"
-                    minSdk 24
-                    targetSdk 34
-                    versionCode 1
-                    versionName "1.0"
-                }
-
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
-                kotlinOptions {
-                    jvmTarget = '17'
-                }
-            }
-
-            dependencies {
-                implementation 'androidx.core:core-ktx:1.12.0'
-                implementation 'androidx.appcompat:appcompat:1.6.1'
-                implementation 'com.google.android.material:material:1.11.0'
-                implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
-            }
-            EOF
-
-            cat << 'EOF' > app/src/main/res/values/strings.xml
-            <resources>
-                <string name="app_name">NetDiag</string>
-            </resources>
-            EOF
+            printf '<resources>\n    <string name="app_name">NetDiag</string>\n</resources>\n' > app/src/main/res/values/strings.xml
 
             gradle wrapper --gradle-version 8.4
           fi
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
